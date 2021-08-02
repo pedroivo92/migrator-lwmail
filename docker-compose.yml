@@ -9,11 +9,5 @@ services:
       - "8080"
     ports:
       - "8080:8080"
-    environment:
-      - DATABASE_USER=${DATABASE_USER}
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
-      - DATABASE_HOST=${DATABASE_HOST}
-      - DATABASE_PORT=${DATABASE_PORT}
-      - DATABASE_NAME=${DATABASE_NAME}
-      - CONTAINER_QUANTITY=${CONTAINER_QUANTITY}
-      - APPLICATION_SECRETS=${APPLICATION_SECRETS}
+    env_file:
+      - .env
