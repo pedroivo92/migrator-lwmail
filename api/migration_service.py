@@ -135,8 +135,7 @@ class MigrationHandler:
             rg = "9999999999"
 
         container_id = f'c{container_number}'
-
-        #item['password'] = self._encrypt_password(item)
+        item['password'] = self._encrypt_password(item)
 
         if item["person_type"].upper() == "PF":
             query = "INSERT INTO migration (id_globo, person_type, current_email_address, alias_email_address, password, name, cpf, rg, id_status, status_date, container_id) " \
