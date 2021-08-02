@@ -1,0 +1,19 @@
+#Documentação
+*.md
+
+#Ambiente virtual
+/venv
+
+#Compilação
+*/__pycache__*
+
+#Git
+.git
+.gitignore
+
+#Docker
+Dockerfile
+*.yml
+
+#Log
+*.log

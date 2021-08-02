@@ -1,0 +1,7 @@
+waitress==2.0.0
+Flask==2.0.1
+flask-expects-json==1.5.0
+cryptography==3.4.7
+SQLAlchemy==1.4.18
+PyMySQL==1.0.2
+pytz==2021.1
