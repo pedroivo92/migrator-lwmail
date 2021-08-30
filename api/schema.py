@@ -117,4 +117,36 @@ schema_migration_status = {
             "id_globo"
         ]
     }
+}   
+
+schema_banner = {
+    "type": "array",
+    "minItems": 1,
+    "maxItems": 1000,
+    "items": {
+        "type": "object",
+        "properties": {
+            "id_migration": {
+                "type": "string"
+            },
+            "current_email_address": {
+                "type": "string"
+            },
+            "message": {
+                "type": "string"
+            },
+            "background_color": {
+                "type": "string"
+            },
+            "message_link": {
+                "type": "string"
+            },
+            "redirect_link": {
+                "type": "string"
+            }
+        },
+        "required": [
+            "id_migration", "current_email_address", "message", "background_color", "message_link", "redirect_link"
+        ]
+    }
 }

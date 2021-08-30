@@ -126,6 +126,19 @@ class MigrationHandler:
             self.database_conn.close()
 
         return make_response(jsonify(result), HTTPStatus.OK.value)
+    
+    def submit_banner(self):
+        try:
+            for item in self.migration_list:
+                self._insert_banner(item)
+
+        except Exception as e:
+            raise Exception(f"Exception: {e}")
+        finally:
+            self.database_conn.close()
+
+        return make_response(jsonify({"result": "banner successfully submitted"}), HTTPStatus.OK.value)
+        
 
     def _insert_migration_data(self, item, container_number):
         current_date = datetime.now(tz=pytz.timezone('America/Sao_Paulo')).strftime('%Y-%m-%dT%H:%M:%S.%f')
@@ -186,7 +199,15 @@ class MigrationHandler:
                         item["address"]["country"], item["address"]["number"], item["address"]["street"])
 
         self.database_conn.execute(query, data)
+    
+    def _insert_banner(self, item):
+        query = "INSERT INTO integratordb.banners (id_migration, current_email_address, message, " \
+                "background_color, message_link, redirect_link) VALUES " \
+                f"('{item['id_migration']}', '{item['current_email_address']}', '{item['message']}', '{item['background_color']}', '{item['message_link']}', '{item['redirect_link']}') " \
+                "ON DUPLICATE KEY UPDATE " \
+                f"message = '{item['message']}', background_color = '{item['background_color']}', message_link = '{item['message_link']}', redirect_link = '{item['redirect_link']}'"
 
+        self.database_conn.execute(text(query))
 
     def _is_valid_email(self, email):
         if not re.match(
