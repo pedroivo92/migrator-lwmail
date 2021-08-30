@@ -143,10 +143,23 @@ schema_banner = {
             },
             "redirect_link": {
                 "type": "string"
-            }
+            },
+            "titulo_alert": {
+                "type": "string"
+            },
+            "message_alert": {
+                "type": "string"
+            },
+            "message_link_alert": {
+                "type": "string"
+            },
+            "redirect_link_alert": {
+                "type": "string"
+            },
         },
         "required": [
-            "id_migration", "current_email_address", "message", "background_color", "message_link", "redirect_link"
+            "id_migration", "current_email_address", "message", "background_color", "message_link", "redirect_link",
+            "titulo_alert", "message_alert", "message_link_alert", "redirect_link_alert"
         ]
     }
 }

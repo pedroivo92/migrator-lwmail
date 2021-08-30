@@ -202,10 +202,15 @@ class MigrationHandler:
     
     def _insert_banner(self, item):
         query = "INSERT INTO integratordb.banners (id_migration, current_email_address, message, " \
-                "background_color, message_link, redirect_link) VALUES " \
-                f"('{item['id_migration']}', '{item['current_email_address']}', '{item['message']}', '{item['background_color']}', '{item['message_link']}', '{item['redirect_link']}') " \
+                "background_color, message_link, redirect_link, titulo_alert, message_alert, message_link_alert, redirect_link_alert) VALUES " \
+                f"('{item['id_migration']}', '{item['current_email_address']}', '{item['message']}', '{item['background_color']}', " \
+                f"'{item['message_link']}', '{item['redirect_link']}', '{item['titulo_alert']}', '{item['message_alert']}', " \
+                f"'{item['message_link_alert']}, '{item['message_link_alert']}'') " \
                 "ON DUPLICATE KEY UPDATE " \
-                f"message = '{item['message']}', background_color = '{item['background_color']}', message_link = '{item['message_link']}', redirect_link = '{item['redirect_link']}'"
+                f"message = '{item['message']}', background_color = '{item['background_color']}', " \
+                f"message_link = '{item['message_link']}', redirect_link = '{item['redirect_link']}', " \
+                f"titulo_alert = '{item['titulo_alert']}', message_alert = '{item['message_alert']}', " \
+                f"message_link_alert = '{item['message_link_alert']}', message_link_alert = '{item['message_link_alert']}'"
 
         self.database_conn.execute(text(query))
 
