@@ -139,7 +139,21 @@ class MigrationHandler:
 
         return make_response(jsonify({"result": "banner successfully submitted"}), HTTPStatus.OK.value)
         
+    def banner_historic(self):
+        result = []
+        try:
 
+            for item in self.migration_list:
+                banner_historic = self._get_banner_historic(item)
+                result.append(banner_historic)
+                
+        except Exception as e:
+            raise Exception(f"Exception: {e}")
+        finally:
+            self.database_conn.close()
+
+        return make_response(jsonify(result), HTTPStatus.OK.value)
+    
     def _insert_migration_data(self, item, container_number):
         current_date = datetime.now(tz=pytz.timezone('America/Sao_Paulo')).strftime('%Y-%m-%dT%H:%M:%S.%f')
         alias_email_address = item["alias_email_address"] if "alias_email_address" in item else ""
@@ -205,14 +219,25 @@ class MigrationHandler:
                 "background_color, message_link, redirect_link, titulo_alert, message_alert, message_link_alert, redirect_link_alert) VALUES " \
                 f"('{item['id_migration']}', '{item['current_email_address']}', '{item['message']}', '{item['background_color']}', " \
                 f"'{item['message_link']}', '{item['redirect_link']}', '{item['titulo_alert']}', '{item['message_alert']}', " \
-                f"'{item['message_link_alert']}, '{item['message_link_alert']}'') " \
+                f"'{item['message_link_alert']}', '{item['redirect_link_alert']}') " \
                 "ON DUPLICATE KEY UPDATE " \
                 f"message = '{item['message']}', background_color = '{item['background_color']}', " \
                 f"message_link = '{item['message_link']}', redirect_link = '{item['redirect_link']}', " \
                 f"titulo_alert = '{item['titulo_alert']}', message_alert = '{item['message_alert']}', " \
-                f"message_link_alert = '{item['message_link_alert']}', message_link_alert = '{item['message_link_alert']}'"
+                f"message_link_alert = '{item['message_link_alert']}', redirect_link_alert = '{item['redirect_link_alert']}'"
 
         self.database_conn.execute(text(query))
+    
+    def _get_banner_historic(self, item):
+        query = "SELECT * FROM integratordb.status_banner " \
+                f"WHERE id_globo = '{item['id_globo']}'"
+        data = self.database_conn.execute(text(query))
+        data = data.fetchone()
+        if data is not None:
+            return {"id_globo": data["id_globo"], "current_email_address": data["current_email_address"], "count_clique_message": data["count_clique_message"], 
+                    "first_date_clique": data["first_date_clique"].strftime('%d/%m/%Y %H:%M:%S'), "last_date_clique": data["last_date_clique"].strftime('%d/%m/%Y %H:%M:%S')}
+        else:
+            return {"id_globo": item["id_globo"], "banner_historic": "Não Encontrado"}
 
     def _is_valid_email(self, email):
         if not re.match(
