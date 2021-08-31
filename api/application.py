@@ -34,7 +34,26 @@ def create_app():
             return migration_service.migration_status()
         except Exception as e:
             return f"An error ocurred - {e}", HTTPStatus.BAD_REQUEST.value
+    
+    @app.route("/submit_banner", methods=["POST"])
+    @expects_json(schema_banner)
+    def submit_banner():
+        try:
+            logging.info("API: Receiving Banner information")
+            migration_service = MigrationHandler(request.json)
+            return migration_service.submit_banner()
+        except Exception as e:
+            return f"An error ocurred - {e}", HTTPStatus.BAD_REQUEST.value
 
+    @app.route("/banner_historic", methods=["POST"])
+    @expects_json(schema_migration_status)
+    def banner_status():
+        try:
+            logging.info("API: Receiving Request for banner historic")
+            migration_service = MigrationHandler(request.json)
+            return migration_service.banner_historic()
+        except Exception as e:
+            return f"An error ocurred - {e}", HTTPStatus.BAD_REQUEST.value
 
     @app.errorhandler(400)
     def bad_request(error):
