@@ -7,11 +7,10 @@ import random
 import uuid
 
 
-url = 'http://localhost:8080/migration'
+url = 'https://mig-globo-qa.locaweb.com.br/migration'
 payload_quantity = 1000
 payload_test = {
         "person_type": "PF",
-        "current_email_address": "teste@globo.com.br",
         "alias_email_address": "",
         "password": "Passwordtotest@2021",
         "name": "globo teste",
@@ -44,7 +43,7 @@ payload_test = {
 payload_list = []
 for i in range(0, payload_quantity):
     payload = {}
-    id_globo = f'{str(uuid.uuid4())}/{random.randint(0,9999999)}'
+    id_globo = f'{str(uuid.uuid4())}/{random.randint(0,99999)}'
     payload.update({'id_globo': id_globo})
     payload_list.append(payload)
 
@@ -53,6 +52,8 @@ for item in payload_list:
     payload = {}
     payload.update(payload_test)
     payload.update({'id_globo': item['id_globo']})
+    email = f"test_{random.randint(0,9999999)}@globo.com.br"
+    payload.update({'current_email_address': email})
     migration_list.append(payload)
 
 
