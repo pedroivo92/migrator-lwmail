@@ -32,8 +32,8 @@ class MigrationHandler:
         for item in self.migration_list:
             errors = []
 
-            # if not self._is_valid_email(item["current_email_address"]):
-            #     errors.append({"campo": "current_email_address", "mensagem": "its not a valid email"})
+            if not self._is_valid_email(item["current_email_address"]):
+                errors.append({"campo": "current_email_address", "mensagem": "its not a valid email"})
 
             is_valid_password = self._is_valid_password(item["password"])
             if not is_valid_password[0]:
@@ -126,6 +126,33 @@ class MigrationHandler:
             self.database_conn.close()
 
         return make_response(jsonify(result), HTTPStatus.OK.value)
+    
+    def migration_status_v2(self):
+        result = []
+        try:
+
+            for item in self.migration_list:
+                response = self._get_migration_status_process(item)
+                result.append(response)
+                          
+        except Exception as e:
+            raise Exception(f"Exception: {e}")
+        finally:
+            self.database_conn.close()
+
+        return make_response(jsonify(result), HTTPStatus.OK.value)
+
+    def reprocess(self):
+        try:
+            for item in self.migration_list:
+                self._update_process_information(item)
+                          
+        except Exception as e:
+            raise Exception(f"Exception: {e}")
+        finally:
+            self.database_conn.close()
+
+        return make_response("", HTTPStatus.OK.value)
     
     def submit_banner(self):
         try:
@@ -228,6 +255,32 @@ class MigrationHandler:
 
         self.database_conn.execute(text(query))
     
+    def _get_migration_status_process(self, item):
+        query = "m.id_globo, m.login, m.new_email_address, sm.id_status_migration, m.status_date, " \
+                "sm.description_status, ps.error_description, ps.id_stage from migration m " \
+                "inner join status_migration sm on sm.id_status_migration = (CASE  WHEN m.id_status=4 THEN 2 ELSE m.id_status END) " \
+                "left join process ps on m.id_globo = ps.id_migration " \
+                "where m.id_globo = " + f"'{item['id_globo']}'"
+                
+        data = self.database_conn.execute(select(text(query)))
+        data = data.fetchone()
+
+        if data is not None:
+            description_stage = self._get_stage_description(data["id_stage"])
+            result = {
+                "id_globo": data["id_globo"], "login": data["login"], "email": data["new_email_address"],
+                "status_code": data["id_status_migration"], "status_name": data["description_status"], "stage_description": description_stage,
+                "error_description": data["error_description"], "status_date": data["status_date"].strftime('%d/%m/%Y %H:%M:%S')
+            }
+        else:
+            result = {
+                "id_globo": item["id_globo"], "status_code": 4, "status_name": "Não Encontrado",
+                "status_date": datetime.today().strftime('%d/%m/%Y %H:%M:%S')
+            }
+        
+        return result
+    
+
     def _get_banner_historic(self, item):
         query = "SELECT * FROM integratordb.status_banner " \
                 f"WHERE id_globo = '{item['id_globo']}'"
@@ -238,6 +291,14 @@ class MigrationHandler:
                     "first_date_clique": data["first_date_clique"].strftime('%d/%m/%Y %H:%M:%S'), "last_date_clique": data["last_date_clique"].strftime('%d/%m/%Y %H:%M:%S')}
         else:
             return {"id_globo": item["id_globo"], "banner_historic": "Não Encontrado"}
+    
+    def _update_process_information(self, item):
+        query = f"UPDATE integratordb.process SET reprocess = 1 WHERE id_migration = '{item['id_globo']}'"
+
+        if item['id_globo'] == "":
+            query = f"UPDATE integratordb.process SET reprocess = 1 WHERE id_migration != '0'"
+
+        self.database_conn.execute(text(query))
 
     def _is_valid_email(self, email):
         if not re.match(
@@ -351,3 +412,33 @@ class MigrationHandler:
     def _encrypt_password(self, item):
         cipher_pass = self.encrypt_session.encrypt(item['password'].encode('utf8'))
         return cipher_pass.decode('utf8')
+
+    def _get_stage_description(self, id_stage):
+        if id_stage == 1:
+            return 'CAPI: Create Customer'
+        
+        if id_stage == 2:
+            return 'CAPI: Get Customer by ID'
+        
+        if id_stage == 3:
+            return 'Bluebird: Create Payment Method'
+
+        if id_stage == 4:
+            return 'Bluebird: Create Cart'
+
+        if id_stage == 5:
+            return 'Bluebird: Checkout Cart'
+        
+        if id_stage == 6:
+            return 'AKAKO: Create Akako Customer'
+        
+        if id_stage == 7:
+            return 'Globomail Procedure'
+        
+        if id_stage == 8:
+            return 'Roundcube Procedure'
+        
+        if id_stage == 9:
+            return 'Notification Service'
+        
+        return None
