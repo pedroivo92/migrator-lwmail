@@ -35,6 +35,16 @@ def create_app():
         except Exception as e:
             return f"An error ocurred - {e}", HTTPStatus.BAD_REQUEST.value
     
+    @app.route("/v2/migration_status", methods=["POST"])
+    @expects_json(schema_migration_status)
+    def migration_status_v2():
+        try:
+            logging.info("API: Receiving Request for email migration status v2")
+            migration_service = MigrationHandler(request.json)
+            return migration_service.migration_status_v2()
+        except Exception as e:
+            return f"An error ocurred - {e}", HTTPStatus.BAD_REQUEST.value
+    
     @app.route("/submit_banner", methods=["POST"])
     @expects_json(schema_banner)
     def submit_banner():
