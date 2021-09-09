@@ -141,6 +141,18 @@ class MigrationHandler:
             self.database_conn.close()
 
         return make_response(jsonify(result), HTTPStatus.OK.value)
+
+    def reprocess(self):
+        try:
+            for item in self.migration_list:
+                self._update_process_information(item)
+                          
+        except Exception as e:
+            raise Exception(f"Exception: {e}")
+        finally:
+            self.database_conn.close()
+
+        return make_response("", HTTPStatus.OK.value)
     
     def submit_banner(self):
         try:
@@ -268,35 +280,6 @@ class MigrationHandler:
         
         return result
     
-    def _get_stage_description(self, id_stage):
-        if id_stage == 1:
-            return 'CAPI: Create Customer'
-        
-        if id_stage == 2:
-            return 'CAPI: Get Customer by ID'
-        
-        if id_stage == 3:
-            return 'Bluebird: Create Payment Method'
-
-        if id_stage == 4:
-            return 'Bluebird: Create Cart'
-
-        if id_stage == 5:
-            return 'Bluebird: Checkout Cart'
-        
-        if id_stage == 6:
-            return 'AKAKO: Create Akako Customer'
-        
-        if id_stage == 7:
-            return 'Globomail Procedure'
-        
-        if id_stage == 8:
-            return 'Roundcube Procedure'
-        
-        if id_stage == 9:
-            return 'Notification Service'
-        
-        return None
 
     def _get_banner_historic(self, item):
         query = "SELECT * FROM integratordb.status_banner " \
@@ -308,6 +291,14 @@ class MigrationHandler:
                     "first_date_clique": data["first_date_clique"].strftime('%d/%m/%Y %H:%M:%S'), "last_date_clique": data["last_date_clique"].strftime('%d/%m/%Y %H:%M:%S')}
         else:
             return {"id_globo": item["id_globo"], "banner_historic": "Não Encontrado"}
+    
+    def _update_process_information(self, item):
+        query = f"UPDATE integratordb.process SET reprocess = 1 WHERE id_migration = '{item['id_globo']}'"
+
+        if item['id_globo'] == "":
+            query = f"UPDATE integratordb.process SET reprocess = 1 WHERE id_migration != '0'"
+
+        self.database_conn.execute(text(query))
 
     def _is_valid_email(self, email):
         if not re.match(
@@ -421,3 +412,33 @@ class MigrationHandler:
     def _encrypt_password(self, item):
         cipher_pass = self.encrypt_session.encrypt(item['password'].encode('utf8'))
         return cipher_pass.decode('utf8')
+
+    def _get_stage_description(self, id_stage):
+        if id_stage == 1:
+            return 'CAPI: Create Customer'
+        
+        if id_stage == 2:
+            return 'CAPI: Get Customer by ID'
+        
+        if id_stage == 3:
+            return 'Bluebird: Create Payment Method'
+
+        if id_stage == 4:
+            return 'Bluebird: Create Cart'
+
+        if id_stage == 5:
+            return 'Bluebird: Checkout Cart'
+        
+        if id_stage == 6:
+            return 'AKAKO: Create Akako Customer'
+        
+        if id_stage == 7:
+            return 'Globomail Procedure'
+        
+        if id_stage == 8:
+            return 'Roundcube Procedure'
+        
+        if id_stage == 9:
+            return 'Notification Service'
+        
+        return None
