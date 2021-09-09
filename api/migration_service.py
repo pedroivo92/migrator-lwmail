@@ -32,8 +32,8 @@ class MigrationHandler:
         for item in self.migration_list:
             errors = []
 
-            if not self._is_valid_email(item["current_email_address"]):
-                errors.append({"campo": "current_email_address", "mensagem": "its not a valid email"})
+            # if not self._is_valid_email(item["current_email_address"]):
+            #     errors.append({"campo": "current_email_address", "mensagem": "its not a valid email"})
 
             is_valid_password = self._is_valid_password(item["password"])
             if not is_valid_password[0]:
