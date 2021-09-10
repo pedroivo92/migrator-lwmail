@@ -35,7 +35,7 @@ def create_app():
         except Exception as e:
             return f"An error ocurred - {e}", HTTPStatus.BAD_REQUEST.value
     
-    @app.route("/v2/migration_status", methods=["POST"])
+    @app.route("/v2/migration-status", methods=["POST"])
     @expects_json(schema_migration_status)
     def migration_status_v2():
         try:
@@ -55,7 +55,7 @@ def create_app():
         except Exception as e:
             return f"An error ocurred - {e}", HTTPStatus.BAD_REQUEST.value
     
-    @app.route("/submit_banner", methods=["POST"])
+    @app.route("/submit-banner", methods=["POST"])
     @expects_json(schema_banner)
     def submit_banner():
         try:
@@ -65,7 +65,7 @@ def create_app():
         except Exception as e:
             return f"An error ocurred - {e}", HTTPStatus.BAD_REQUEST.value
 
-    @app.route("/banner_historic", methods=["POST"])
+    @app.route("/banner-historic", methods=["POST"])
     @expects_json(schema_migration_status)
     def banner_status():
         try:

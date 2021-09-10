@@ -126,7 +126,7 @@ schema_banner = {
     "items": {
         "type": "object",
         "properties": {
-            "id_migration": {
+            "id_globo": {
                 "type": "string"
             },
             "current_email_address": {
@@ -158,7 +158,7 @@ schema_banner = {
             },
         },
         "required": [
-            "id_migration", "current_email_address", "message", "background_color", "message_link", "redirect_link",
+            "id_globo", "current_email_address", "message", "background_color", "message_link", "redirect_link",
             "titulo_alert", "message_alert", "message_link_alert", "redirect_link_alert"
         ]
     }

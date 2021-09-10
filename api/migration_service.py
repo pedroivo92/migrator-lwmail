@@ -244,7 +244,7 @@ class MigrationHandler:
     def _insert_banner(self, item):
         query = "INSERT INTO integratordb.banners (id_migration, current_email_address, message, " \
                 "background_color, message_link, redirect_link, titulo_alert, message_alert, message_link_alert, redirect_link_alert) VALUES " \
-                f"('{item['id_migration']}', '{item['current_email_address']}', '{item['message']}', '{item['background_color']}', " \
+                f"('{item['id_globo']}', '{item['current_email_address']}', '{item['message']}', '{item['background_color']}', " \
                 f"'{item['message_link']}', '{item['redirect_link']}', '{item['titulo_alert']}', '{item['message_alert']}', " \
                 f"'{item['message_link_alert']}', '{item['redirect_link_alert']}') " \
                 "ON DUPLICATE KEY UPDATE " \
