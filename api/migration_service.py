@@ -256,7 +256,7 @@ class MigrationHandler:
         self.database_conn.execute(text(query))
     
     def _get_migration_status_process(self, item):
-        query = "m.id_globo, m.login, m.new_email_address, sm.id_status_migration, m.status_date, " \
+        query = "m.id_globo, m.login, m.new_email_address, m.cart_id, sm.id_status_migration, m.status_date, " \
                 "sm.description_status, ps.error_description, ps.id_stage from migration m " \
                 "inner join status_migration sm on sm.id_status_migration = (CASE  WHEN m.id_status=4 THEN 2 ELSE m.id_status END) " \
                 "left join process ps on m.id_globo = ps.id_migration " \
@@ -268,7 +268,7 @@ class MigrationHandler:
         if data is not None:
             description_stage = self._get_stage_description(data["id_stage"])
             result = {
-                "id_globo": data["id_globo"], "login": data["login"], "email": data["new_email_address"],
+                "id_globo": data["id_globo"], "login": data["login"], "email": data["new_email_address"], "cart_id": data["cart_id"],
                 "status_code": data["id_status_migration"], "status_name": data["description_status"], "stage_description": description_stage,
                 "error_description": data["error_description"], "status_date": data["status_date"].strftime('%d/%m/%Y %H:%M:%S')
             }
