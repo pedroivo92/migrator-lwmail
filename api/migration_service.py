@@ -419,16 +419,7 @@ class MigrationHandler:
         
         if id_stage == 2:
             return 'CAPI: Get Customer by ID'
-        
-        if id_stage == 3:
-            return 'Bluebird: Create Payment Method'
 
-        if id_stage == 4:
-            return 'Bluebird: Create Cart'
-
-        if id_stage == 5:
-            return 'Bluebird: Checkout Cart'
-        
         if id_stage == 6:
             return 'AKAKO: Create Akako Customer'
         
@@ -441,4 +432,13 @@ class MigrationHandler:
         if id_stage == 9:
             return 'Notification Service'
         
+        if id_stage == 10:
+            return 'Bluebird: Create Payment Method'
+
+        if id_stage == 11:
+            return 'Bluebird: Create Cart'
+
+        if id_stage == 12:
+            return 'Bluebird: Checkout Cart'
+
         return None
