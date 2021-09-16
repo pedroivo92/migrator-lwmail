@@ -32,8 +32,8 @@ class MigrationHandler:
         for item in self.migration_list:
             errors = []
 
-            # if not self._is_valid_email(item["current_email_address"]):
-            #     errors.append({"campo": "current_email_address", "mensagem": "its not a valid email"})
+            if not self._is_valid_email(item["current_email_address"]):
+                errors.append({"campo": "current_email_address", "mensagem": "its not a valid email"})
 
             is_valid_password = self._is_valid_password(item["password"])
             if not is_valid_password[0]:
@@ -133,14 +133,17 @@ class MigrationHandler:
 
             for item in self.migration_list:
                 response = self._get_migration_status_process(item)
+                
+                if not item['id_globo']:
+                    return make_response(jsonify(response), HTTPStatus.OK.value)
+
                 result.append(response)
-                          
+            
+            return make_response(jsonify(result), HTTPStatus.OK.value)
         except Exception as e:
             raise Exception(f"Exception: {e}")
         finally:
             self.database_conn.close()
-
-        return make_response(jsonify(result), HTTPStatus.OK.value)
 
     def reprocess(self):
         try:
@@ -256,31 +259,38 @@ class MigrationHandler:
         self.database_conn.execute(text(query))
     
     def _get_migration_status_process(self, item):
-        query = "m.id_globo, m.login, m.new_email_address, m.cart_id, sm.id_status_migration, m.status_date, " \
-                "sm.description_status, ps.error_description, ps.id_stage from migration m " \
-                "inner join status_migration sm on sm.id_status_migration = (CASE  WHEN m.id_status=4 THEN 2 ELSE m.id_status END) " \
-                "left join process ps on m.id_globo = ps.id_migration " \
-                "where m.id_globo = " + f"'{item['id_globo']}'"
-                
-        data = self.database_conn.execute(select(text(query)))
-        data = data.fetchone()
+        query = self._get_query_status_v2(item)
+        result = self.database_conn.execute(select(text(query)))
+        data = result.fetchone()
+        
+        if not item['id_globo']:
+            datas = result.fetchall()
+            payload = []
+            for data in datas:
+                description_stage = self._get_stage_description(data["id_stage"])
+                payload.append({
+                    "id_globo": data["id_globo"], "login": data["login"], "email": data["new_email_address"], "cart_id": data["cart_id"],
+                    "status_code": data["id_status_migration"], "status_name": data["description_status"], "stage_description": description_stage,
+                    "error_description": data["error_description"], "status_date": data["status_date"].strftime('%d/%m/%Y %H:%M:%S')
+                })
+            
+            return payload
 
-        if data is not None:
-            description_stage = self._get_stage_description(data["id_stage"])
-            result = {
-                "id_globo": data["id_globo"], "login": data["login"], "email": data["new_email_address"], "cart_id": data["cart_id"],
-                "status_code": data["id_status_migration"], "status_name": data["description_status"], "stage_description": description_stage,
-                "error_description": data["error_description"], "status_date": data["status_date"].strftime('%d/%m/%Y %H:%M:%S')
-            }
-        else:
-            result = {
+
+        if data is None:
+            return {
                 "id_globo": item["id_globo"], "status_code": 4, "status_name": "Não Encontrado",
                 "status_date": datetime.today().strftime('%d/%m/%Y %H:%M:%S')
             }
         
-        return result
-    
-
+        description_stage = self._get_stage_description(data["id_stage"])
+        return {
+            "id_globo": data["id_globo"], "login": data["login"], "email": data["new_email_address"], "cart_id": data["cart_id"],
+            "status_code": data["id_status_migration"], "status_name": data["description_status"], "stage_description": description_stage,
+            "error_description": data["error_description"], "status_date": data["status_date"].strftime('%d/%m/%Y %H:%M:%S')
+        }
+        
+        
     def _get_banner_historic(self, item):
         query = "SELECT * FROM integratordb.status_banner " \
                 f"WHERE id_globo = '{item['id_globo']}'"
@@ -412,6 +422,20 @@ class MigrationHandler:
     def _encrypt_password(self, item):
         cipher_pass = self.encrypt_session.encrypt(item['password'].encode('utf8'))
         return cipher_pass.decode('utf8')
+
+    def _get_query_status_v2(self, item):
+        if not item['id_globo']:
+            return "m.id_globo, m.login, m.new_email_address, m.cart_id, sm.id_status_migration, m.status_date, " \
+                    "sm.description_status, ps.error_description, ps.id_stage from migration m " \
+                    "inner join status_migration sm on sm.id_status_migration = (CASE  WHEN m.id_status=4 THEN 2 ELSE m.id_status END) " \
+                    "left join process ps on m.id_globo = ps.id_migration " \
+                    "where m.id_globo != '' and ps.error_description is not null" 
+
+        return "m.id_globo, m.login, m.new_email_address, m.cart_id, sm.id_status_migration, m.status_date, " \
+                "sm.description_status, ps.error_description, ps.id_stage from migration m " \
+                "inner join status_migration sm on sm.id_status_migration = (CASE  WHEN m.id_status=4 THEN 2 ELSE m.id_status END) " \
+                "left join process ps on m.id_globo = ps.id_migration " \
+                "where m.id_globo = " + f"'{item['id_globo']}'"
 
     def _get_stage_description(self, id_stage):
         if id_stage == 1:
