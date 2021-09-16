@@ -296,11 +296,16 @@ class MigrationHandler:
                 f"WHERE id_globo = '{item['id_globo']}'"
         data = self.database_conn.execute(text(query))
         data = data.fetchone()
-        if data is not None:
-            return {"id_globo": data["id_globo"], "current_email_address": data["current_email_address"], "count_clique_message": data["count_clique_message"], 
-                    "first_date_clique": data["first_date_clique"].strftime('%d/%m/%Y %H:%M:%S'), "last_date_clique": data["last_date_clique"].strftime('%d/%m/%Y %H:%M:%S')}
-        else:
+        if data is None:
             return {"id_globo": item["id_globo"], "banner_historic": "Não Encontrado"}
+          
+        first_date_clique = data["first_date_clique"].strftime('%d/%m/%Y %H:%M:%S') if data["first_date_clique"] else None
+        last_date_clique = data["last_date_clique"].strftime('%d/%m/%Y %H:%M:%S') if data["last_date_clique"] else None
+            
+        return {
+            "id_globo": data["id_globo"], "current_email_address": data["current_email_address"], "count_clique_message": data["count_clique_message"], 
+            "first_date_clique": first_date_clique , "last_date_clique": last_date_clique
+        }
     
     def _update_process_information(self, item):
         query = f"UPDATE integratordb.process SET reprocess = 1 WHERE id_migration = '{item['id_globo']}'"
