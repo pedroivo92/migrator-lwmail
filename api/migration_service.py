@@ -332,7 +332,7 @@ class MigrationHandler:
             return False, "password doesn't have a uppercase letter"
         elif re.search('[a-z]', password) is None:
             return False, "password doesn't have a lowercase letter"
-        elif re.search('[^\w\*]', password) is None:
+        elif re.search('[@_-!#$%^&*()<>?/|}{~:]', password) is None:
             return False, "password doesn't have a special character"
         else:
             return True, "password seems fine"
@@ -423,6 +423,7 @@ class MigrationHandler:
             return False
 
         return True
+    
 
     def _encrypt_password(self, item):
         cipher_pass = self.encrypt_session.encrypt(item['password'].encode('utf8'))
