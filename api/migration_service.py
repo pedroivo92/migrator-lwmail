@@ -222,7 +222,10 @@ class MigrationHandler:
             self.database_conn.execute(query, data)
 
     def _insert_email(self, item):
-        for email in item["emails"]:
+        
+        emails = list({payload['address']:payload for payload in item["emails"]}.values())
+
+        for email in emails:
             query = "INSERT INTO email (id_migration, email_address, main, confirmed) VALUES (%s, %s, %s, %s)"
             data = (item["id_globo"], email["address"], 1 if email["main"] else 0, 1 if email["confirmed"] else 0)
             self.database_conn.execute(query, data)
