@@ -335,7 +335,7 @@ class MigrationHandler:
             return False, "password doesn't have a uppercase letter"
         elif re.search('[a-z]', password) is None:
             return False, "password doesn't have a lowercase letter"
-        elif re.search('[@_!#$%^&*()<>?/|}{~:]', password) is None:
+        elif re.search('[@_!#$%^&*()<>+.;?/|}{~:]', password) is None:
             return False, "password doesn't have a special character"
         else:
             return True, "password seems fine"
