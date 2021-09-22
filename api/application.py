@@ -55,6 +55,16 @@ def create_app():
         except Exception as e:
             return f"An error ocurred - {e}", HTTPStatus.BAD_REQUEST.value
     
+    @app.route("/statistics", methods=["GET"])
+    def statistics():
+        try:
+            logging.info("API: getting statistics")
+
+            migration_service = MigrationHandler()
+            return migration_service.statitics()
+        except Exception as e:
+            return f"An error ocurred - {e}", HTTPStatus.BAD_REQUEST.value
+    
     @app.route("/submit-banner", methods=["POST"])
     @expects_json(schema_banner)
     def submit_banner():
