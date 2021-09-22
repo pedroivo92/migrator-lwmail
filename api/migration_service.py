@@ -13,7 +13,7 @@ from settings import *
 
 class MigrationHandler:
 
-    def __init__(self, migration_list):
+    def __init__(self, migration_list = None):
         self.migration_list = migration_list
         self.engine = create_engine(DATABASE_CONNECTION_URL, pool_recycle=30, pool_pre_ping=True)
         self.database_conn = self.engine.connect()
@@ -157,6 +157,17 @@ class MigrationHandler:
 
         return make_response("", HTTPStatus.OK.value)
     
+    def statitics(self):
+        try:
+            result = self._get_statistics()
+                          
+        except Exception as e:
+            raise Exception(f"Exception: {e}")
+        finally:
+            self.database_conn.close()
+
+        return make_response(jsonify(result), HTTPStatus.OK.value)
+    
     def submit_banner(self):
         try:
             for item in self.migration_list:
@@ -223,7 +234,8 @@ class MigrationHandler:
 
     def _insert_email(self, item):
         
-        emails = list({payload['address']:payload for payload in item["emails"]}.values())
+        newlist = sorted(item["emails"], key=lambda k: k['main']) 
+        emails = list({payload['address']:payload for payload in newlist}.values())
 
         for email in emails:
             query = "INSERT INTO email (id_migration, email_address, main, confirmed) VALUES (%s, %s, %s, %s)"
@@ -317,6 +329,33 @@ class MigrationHandler:
             query = f"UPDATE integratordb.process SET reprocess = 1 WHERE id_migration != '0'"
 
         self.database_conn.execute(text(query))
+    
+    def _get_statistics(self):
+
+        query = f"SELECT COUNT(id_globo) FROM integratordb.migration WHERE id_status = 1"
+
+        aguardando_processamento = self.database_conn.execute(text(query)).fetchone()
+
+        query = f"SELECT COUNT(m.id_globo) FROM integratordb.migration AS m " \
+                 "INNER JOIN integratordb.process AS p on m.id_globo = p.id_migration "
+
+        processado_com_erro = self.database_conn.execute(text(query)).fetchone()
+
+        query = f"SELECT COUNT(id_globo) FROM integratordb.migration WHERE id_status = 3"
+
+        processado = self.database_conn.execute(text(query)).fetchone()
+
+        query = f"SELECT COUNT(id_globo) FROM integratordb.migration WHERE id_status = 3 and " \
+                 "cart_id IS NOT NULL"
+
+        processado_bluebird = self.database_conn.execute(text(query)).fetchone()
+
+        return {
+            "aguardando_processamento": aguardando_processamento.values()[0],
+            "processado_com_erro": processado_com_erro.values()[0],
+            "processado": processado.values()[0],
+            "processado_bluebird": processado_bluebird.values()[0]
+        }
 
     def _is_valid_email(self, email):
         if not re.match(
