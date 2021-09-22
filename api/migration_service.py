@@ -223,7 +223,8 @@ class MigrationHandler:
 
     def _insert_email(self, item):
         
-        emails = list({payload['address']:payload for payload in item["emails"]}.values())
+        newlist = sorted(item["emails"], key=lambda k: k['main']) 
+        emails = list({payload['address']:payload for payload in newlist}.values())
 
         for email in emails:
             query = "INSERT INTO email (id_migration, email_address, main, confirmed) VALUES (%s, %s, %s, %s)"
