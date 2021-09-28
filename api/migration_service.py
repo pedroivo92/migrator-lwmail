@@ -204,6 +204,8 @@ class MigrationHandler:
 
         container_id = f'c{container_number}'
         item['password'] = self._encrypt_password(item)
+                
+        self._remove_extra_spaces(item)
 
         if item["person_type"].upper() == "PF":
             query = "INSERT INTO migration (id_globo, person_type, current_email_address, alias_email_address, password, name, cpf, rg, id_status, status_date, container_id) " \
@@ -211,7 +213,7 @@ class MigrationHandler:
 
             data = (item["id_globo"], item["person_type"], item["current_email_address"], alias_email_address,
                     item["password"], item["name"], item["cpf"], rg, current_date, container_id)
-        else:
+        else:            
             query = "INSERT INTO migration (id_globo, person_type, current_email_address, alias_email_address, password, name, rg, company_name, cnpj, cpf, id_status, status_date, container_id) " \
                     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, '1', %s, %s)"
 
@@ -239,7 +241,7 @@ class MigrationHandler:
 
         for email in emails:
             query = "INSERT INTO email (id_migration, email_address, main, confirmed) VALUES (%s, %s, %s, %s)"
-            data = (item["id_globo"], email["address"], 1 if email["main"] else 0, 1 if email["confirmed"] else 0)
+            data = (item["id_globo"], email["address"].strip(), 1 if email["main"] else 0, 1 if email["confirmed"] else 0)
             self.database_conn.execute(query, data)
 
     def _insert_address(self, item):
@@ -356,6 +358,13 @@ class MigrationHandler:
             "processado": processado.values()[0],
             "processado_bluebird": processado_bluebird.values()[0]
         }
+
+    def _remove_extra_spaces(self, item):
+        item["name"] = item["name"].strip()
+        item["current_email_address"] = item["current_email_address"].strip()
+
+        if item["person_type"].upper() == "PJ":
+            item["company_name"] = item["company_name"].strip()
 
     def _is_valid_email(self, email):
         if not re.match(
