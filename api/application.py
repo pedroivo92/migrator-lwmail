@@ -55,6 +55,16 @@ def create_app():
         except Exception as e:
             return f"An error ocurred - {e}", HTTPStatus.BAD_REQUEST.value
     
+    @app.route("/reprocess-migration", methods=["POST"])
+    @expects_json(schema_migration_status)
+    def reprocess_migration():
+        try:
+            logging.info("API: Reprocess migration registry")
+            migration_service = MigrationHandler(request.json)
+            return migration_service.reprocess_migration()
+        except Exception as e:
+            return f"An error ocurred - {e}", HTTPStatus.BAD_REQUEST.value
+    
     @app.route("/statistics", methods=["GET"])
     def statistics():
         try:

@@ -5,6 +5,8 @@ from http import HTTPStatus
 from sqlalchemy import create_engine, exc
 from sqlalchemy.sql import text, select
 from cryptography.fernet import Fernet
+from unidecode import unidecode
+import json
 import pytz
 import re
 
@@ -157,6 +159,16 @@ class MigrationHandler:
 
         return make_response("", HTTPStatus.OK.value)
     
+    def reprocess_migration(self):
+        try:
+            for item in self.migration_list:
+                self._update_process_migration(item)
+                          
+        except Exception as e:
+            raise Exception(f"Exception: {e}")
+        finally:
+            self.database_conn.close()
+    
     def statitics(self):
         try:
             result = self._get_statistics()
@@ -264,19 +276,32 @@ class MigrationHandler:
         self.database_conn.execute(query, data)
     
     def _insert_banner(self, item):
+        show_alert_once = self._verify_alert(item)
+        
         query = "INSERT INTO integratordb.banners (id_migration, current_email_address, message, " \
-                "background_color, message_link, redirect_link, titulo_alert, message_alert, message_link_alert, redirect_link_alert) VALUES " \
+                "background_color, message_link, redirect_link, titulo_alert, message_alert, message_link_alert, redirect_link_alert, show_alert_only, show_alert_view) VALUES " \
                 f"('{item['id_globo']}', '{item['current_email_address']}', '{item['message']}', '{item['background_color']}', " \
                 f"'{item['message_link']}', '{item['redirect_link']}', '{item['titulo_alert']}', '{item['message_alert']}', " \
-                f"'{item['message_link_alert']}', '{item['redirect_link_alert']}') " \
+                f"'{item['message_link_alert']}', '{item['redirect_link_alert']}', {show_alert_once}, {0}) " \
                 "ON DUPLICATE KEY UPDATE " \
                 f"message = '{item['message']}', background_color = '{item['background_color']}', " \
                 f"message_link = '{item['message_link']}', redirect_link = '{item['redirect_link']}', " \
                 f"titulo_alert = '{item['titulo_alert']}', message_alert = '{item['message_alert']}', " \
-                f"message_link_alert = '{item['message_link_alert']}', redirect_link_alert = '{item['redirect_link_alert']}'"
+                f"message_link_alert = '{item['message_link_alert']}', redirect_link_alert = '{item['redirect_link_alert']}', show_alert_only = {show_alert_once}"
 
         self.database_conn.execute(text(query))
     
+    def _verify_alert(self, item):
+        if 'show_alert_only' in item:
+            return 1 if item['show_alert_only'] is True else 0
+        
+        messages = MESSAGES_ALERT.split("||")
+
+        if item['titulo_alert'] in messages:
+            return 1
+
+        return 0
+
     def _get_migration_status_process(self, item):
         query = self._get_query_status_v2(item)
         result = self.database_conn.execute(select(text(query)))
@@ -333,6 +358,11 @@ class MigrationHandler:
             query = f"UPDATE integratordb.process SET reprocess = 1 WHERE id_migration != '0'"
 
         self.database_conn.execute(text(query))
+
+    def _update_process_migration(self, item):
+        query = f"UPDATE integratordb.migration SET id_status = 1 WHERE id_globo = '{item['id_globo']}'"
+
+        self.database_conn.execute(text(query))
     
     def _get_statistics(self):
 
@@ -363,10 +393,15 @@ class MigrationHandler:
 
     def _remove_extra_spaces(self, item):
         item["name"] = item["name"].strip()
+        item["name"] = item["name"].replace("'", "")
+        item["name"] = unidecode(item["name"])
+
         item["current_email_address"] = item["current_email_address"].strip()
 
         if item["person_type"].upper() == "PJ":
             item["company_name"] = item["company_name"].strip()
+            item["company_name"] = item["company_name"].replace("'", "")
+            item["company_name"] = unidecode(item["company_name"])
 
     def _is_valid_email(self, email):
         if not re.match(
@@ -488,7 +523,7 @@ class MigrationHandler:
                     "sm.description_status, ps.error_description, ps.id_stage from migration m " \
                     "inner join status_migration sm on sm.id_status_migration = (CASE  WHEN m.id_status=4 THEN 2 ELSE m.id_status END) " \
                     "left join process ps on m.id_globo = ps.id_migration " \
-                    "where m.id_globo != '' and ps.error_description is not null" 
+                    "where m.id_globo != '' and m.id_status = 2" 
 
         return "m.id_globo, m.login, m.new_email_address, m.cart_id, sm.id_status_migration, m.status_date, " \
                 "sm.description_status, ps.error_description, ps.id_stage from migration m " \

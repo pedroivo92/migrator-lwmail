@@ -156,6 +156,9 @@ schema_banner = {
             "redirect_link_alert": {
                 "type": "string"
             },
+            "show_alert_only": {
+                "type": "string"
+            },
         },
         "required": [
             "id_globo", "current_email_address", "message", "background_color", "message_link", "redirect_link",
