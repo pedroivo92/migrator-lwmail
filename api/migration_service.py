@@ -162,12 +162,18 @@ class MigrationHandler:
     def reprocess_migration(self):
         try:
             for item in self.migration_list:
+                if not item["id_globo"]:
+                    return make_response(jsonify({"mensagem": "id_globo deve ser preenchido"}), HTTPStatus.UNPROCESSABLE_ENTITY.value)
+            
+            for item in self.migration_list:
                 self._update_process_migration(item)
                           
         except Exception as e:
             raise Exception(f"Exception: {e}")
         finally:
             self.database_conn.close()
+        
+        return make_response("", HTTPStatus.OK.value)
     
     def statitics(self):
         try:
