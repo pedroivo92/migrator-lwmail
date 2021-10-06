@@ -293,7 +293,8 @@ class MigrationHandler:
                 f"message = '{item['message']}', background_color = '{item['background_color']}', " \
                 f"message_link = '{item['message_link']}', redirect_link = '{item['redirect_link']}', " \
                 f"titulo_alert = '{item['titulo_alert']}', message_alert = '{item['message_alert']}', " \
-                f"message_link_alert = '{item['message_link_alert']}', redirect_link_alert = '{item['redirect_link_alert']}', show_alert_only = {show_alert_once}"
+                f"message_link_alert = '{item['message_link_alert']}', redirect_link_alert = '{item['redirect_link_alert']}', " \
+                f"show_alert_only = {show_alert_once}, show_alert_view = {0}"
 
         self.database_conn.execute(text(query))
     
