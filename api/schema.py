@@ -157,7 +157,7 @@ schema_banner = {
                 "type": "string"
             },
             "show_alert_only": {
-                "type": "string"
+                "type": "boolean"
             },
         },
         "required": [
