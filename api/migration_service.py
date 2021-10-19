@@ -6,6 +6,7 @@ from sqlalchemy import create_engine, exc
 from sqlalchemy.sql import text, select
 from cryptography.fernet import Fernet
 from unidecode import unidecode
+from validate_docbr import CPF, CNPJ
 import json
 import pytz
 import re
@@ -20,6 +21,8 @@ class MigrationHandler:
         self.engine = create_engine(DATABASE_CONNECTION_URL, pool_recycle=30, pool_pre_ping=True)
         self.database_conn = self.engine.connect()
         self.encrypt_session = Fernet(APPLICATION_SECRETS.encode('utf8'))
+        self.doc_validator_cpf = CPF(repeated_digits=False)
+        self.doc_validator_cnpj = CNPJ()
 
     def migration_handler(self):
         errors = self.validations()
@@ -222,8 +225,16 @@ class MigrationHandler:
 
         container_id = f'c{container_number}'
         item['password'] = self._encrypt_password(item)
-                
-        self._remove_extra_spaces(item)
+
+        item["current_email_address"] = item["current_email_address"].strip()
+        
+        item["name"] = self._check_last_name(item["name"])
+
+        if item["person_type"].upper() == "PJ":
+            item["company_name"] = self._check_last_name(item["company_name"])
+            item["cnpj"] = self._check_cnpj_number(item["cnpj"])
+
+        item["cpf"] = self._check_cpf_number(item["cpf"])
 
         if item["person_type"].upper() == "PF":
             query = "INSERT INTO migration (id_globo, person_type, current_email_address, alias_email_address, password, name, cpf, rg, id_status, status_date, container_id) " \
@@ -321,6 +332,7 @@ class MigrationHandler:
                 description_stage = self._get_stage_description(data["id_stage"])
                 payload.append({
                     "id_globo": data["id_globo"], "login": data["login"], "email": data["new_email_address"], "cart_id": data["cart_id"],
+                    "container_id": data["container_id"], "name": data["name"],
                     "status_code": data["id_status_migration"], "status_name": data["description_status"], "stage_description": description_stage,
                     "error_description": data["error_description"], "status_date": data["status_date"].strftime('%d/%m/%Y %H:%M:%S')
                 })
@@ -398,21 +410,58 @@ class MigrationHandler:
             "processado_bluebird": processado_bluebird.values()[0]
         }
 
-    def _remove_extra_spaces(self, item):
-        item["name"] = item["name"].strip()
-        item["name"] = item["name"].replace("'", "")
-        item["name"] = unidecode(item["name"])
-
+    def _treat_name(self, item):
+        item["name"] = self._check_last_name(item["name"])
         item["current_email_address"] = item["current_email_address"].strip()
 
         if item["person_type"].upper() == "PJ":
-            item["company_name"] = item["company_name"].strip()
-            item["company_name"] = item["company_name"].replace("'", "")
-            item["company_name"] = unidecode(item["company_name"])
+            item["company_name"] = self._check_last_name(item["company_name"])
+    
+    def _check_last_name(self, string_name):
+        string_name = string_name.strip()
+        string_name = string_name.replace("'", "")
+        string_name = string_name.replace('"', '')
+        string_name = unidecode(string_name)
+        string_name = re.sub('[^A-Za-z]+', ' ', string_name)
+        string_name = string_name.strip()
+
+        names = string_name.split()
+        shortnames = []    
+        
+        for name in names:
+            if len(name) < 2:
+                shortnames.append(name)
+
+        for shortname in shortnames:        
+                names.remove(shortname)
+        
+        if len(names) >= 2:
+            for shortname in reversed(shortnames):
+                names[1] = f'{shortname}{names[1]}'
+        else:
+            last_name = names[0]
+            for shortname in shortnames:
+                last_name = f'{last_name}{shortname}'
+
+            names.append(last_name)
+
+        return ' '.join(names)
+    
+    def _check_cpf_number(self, doc_number):
+        if self.doc_validator_cpf.validate(doc_number):
+            return doc_number
+        
+        return "83494475083"
+    
+    def _check_cnpj_number(self, doc_number):
+        if self.doc_validator_cnpj.validate(doc_number):
+            return doc_number
+        
+        return "22486400000191"
 
     def _is_valid_email(self, email):
         if not re.match(
-                "[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?",
+                "[a-z0-9!#$%&'*+=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?",
                 email):
             return False
 
@@ -527,12 +576,14 @@ class MigrationHandler:
     def _get_query_status_v2(self, item):
         if not item['id_globo']:
             return "m.id_globo, m.login, m.new_email_address, m.cart_id, sm.id_status_migration, m.status_date, " \
+                    "m.container_id, m.name, m.current_email_address, " \
                     "sm.description_status, ps.error_description, ps.id_stage from migration m " \
                     "inner join status_migration sm on sm.id_status_migration = (CASE  WHEN m.id_status=4 THEN 2 ELSE m.id_status END) " \
                     "left join process ps on m.id_globo = ps.id_migration " \
                     "where m.id_globo != '' and m.id_status = 2" 
 
         return "m.id_globo, m.login, m.new_email_address, m.cart_id, sm.id_status_migration, m.status_date, " \
+                "m.container_id, m.name, m.current_email_address, " \
                 "sm.description_status, ps.error_description, ps.id_stage from migration m " \
                 "inner join status_migration sm on sm.id_status_migration = (CASE  WHEN m.id_status=4 THEN 2 ELSE m.id_status END) " \
                 "left join process ps on m.id_globo = ps.id_migration " \
