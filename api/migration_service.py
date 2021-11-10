@@ -138,7 +138,7 @@ class MigrationHandler:
 
             for item in self.migration_list:
                 response = self._get_migration_status_process(item)
-                
+
                 if not item['id_globo']:
                     return make_response(jsonify(response), HTTPStatus.OK.value)
 
@@ -323,8 +323,6 @@ class MigrationHandler:
     def _get_migration_status_process(self, item):
         query = self._get_query_status_v2(item)
         result = self.database_conn.execute(select(text(query)))
-        data = result.fetchone()
-        
         if not item['id_globo']:
             datas = result.fetchall()
             payload = []
@@ -339,6 +337,7 @@ class MigrationHandler:
             
             return payload
 
+        data = result.fetchone()
 
         if data is None:
             return {
@@ -460,8 +459,11 @@ class MigrationHandler:
         return "22486400000191"
 
     def _is_valid_email(self, email):
+        if re.search("[`']", email) is not None:
+            return False
+
         if not re.match(
-                "[a-z0-9!#$%&*+=?^_{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?",
+                "[a-z0-9!#$%&*+=?^_{|}~-]+(?:\.[a-z0-9!#$%&*+/=?^_{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?",
                 email):
             return False
 
@@ -534,6 +536,10 @@ class MigrationHandler:
     def _is_valid_email_list(self, email_list):
         invalid = False
         for email in email_list:
+            if re.search("[`']", email["address"]) is not None:
+                invalid = True
+                break
+           
             if not re.match(
                     "[a-z0-9!#$%&*+=?^_{|}~-]+(?:\.[a-z0-9!#$%&*+/=?^_{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?",
                     email["address"]):
@@ -579,7 +585,7 @@ class MigrationHandler:
                     "m.container_id, m.name, m.current_email_address, " \
                     "sm.description_status, ps.error_description, ps.id_stage from migration m " \
                     "inner join status_migration sm on sm.id_status_migration = (CASE  WHEN m.id_status=4 THEN 2 ELSE m.id_status END) " \
-                    "left join process ps on m.id_globo = ps.id_migration " \
+                    "inner join process ps on m.id_globo = ps.id_migration " \
                     "where m.id_globo != '' and m.id_status = 2" 
 
         return "m.id_globo, m.login, m.new_email_address, m.cart_id, sm.id_status_migration, m.status_date, " \
